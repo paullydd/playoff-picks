@@ -81,12 +81,42 @@
 
 
     function render(rows) {
-      app.innerHTML = "";
+  app.innerHTML = "";
 
-      if (!rows.length) {
-        app.innerHTML = `<div class="card error">No data found. Make sure your PublicLeaderboard is published as CSV.</div>`;
-        return;
-      }
+  if (!rows || !rows.length) {
+    app.innerHTML = `<div class="card error">No data found. Make sure your PublicLeaderboard is published as CSV.</div>`;
+    return;
+  }
+
+  // Sort by total desc (in case the sheet isn't sorted)
+  const sorted = [...rows].sort((a, b) => (b.total || 0) - (a.total || 0));
+
+  // Decide what to show (Top 10 vs All)
+  const view = showTop10 ? sorted.slice(0, 10) : sorted;
+
+  for (let i = 0; i < view.length; i++) {
+    const r = view[i];
+
+    // If CSV includes medals, use them; otherwise show numeric rank
+    const displayRank = r.medal && r.medal.trim()
+      ? r.medal.trim()
+      : `#${i + 1}`;
+
+    const el = document.createElement("div");
+    el.className = "card";
+    el.innerHTML = `
+      <div class="row">
+        <div class="rank">${displayRank}</div>
+        <div class="name">${escapeHtml(r.name || "")}</div>
+        <div class="pts">${Number(r.total || 0).toFixed(2)}</div>
+      </div>
+      <div class="pill">Total PPR Points</div>
+    `;
+
+    app.appendChild(el);
+  }
+}
+
 
       // Sort by total desc (in case the sheet isn't sorted)
       rows.sort((a,b) => b.total - a.total);
@@ -171,6 +201,7 @@ for (let i = 0; i < view.length; i++) {
   </script>
 </body>
 </html>
+
 
 
 
