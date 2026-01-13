@@ -6,13 +6,13 @@
   <title>Playoff Leaderboard</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; margin: 0; background: #f6f7fb; }
-    header { position: sticky; top: 0; background: white; padding: 14px 16px; border-bottom: 1px solid #e5e7eb; }
+    header { position: sticky; top: 0; background: white; padding: 14px 16px; border-bottom: 1px solid #e5e7eb; z-index: 10; }
     h1 { font-size: 18px; margin: 0; }
     .sub { color:#6b7280; font-size: 12px; margin-top: 4px; }
     main { padding: 14px 12px 28px; max-width: 720px; margin: 0 auto; }
     .card { background: white; border: 1px solid #e5e7eb; border-radius: 14px; padding: 12px 14px; margin: 10px 0; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
     .row { display:flex; align-items:baseline; justify-content:space-between; gap: 12px; }
-    .rank { font-weight: 800; font-size: 22px; width: 44px; }
+    .rank { font-weight: 800; font-size: 22px; width: 52px; }
     .name { font-weight: 700; font-size: 16px; flex: 1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .pts { font-weight: 900; font-size: 18px; }
     .pill { display:inline-block; margin-top:8px; padding:4px 10px; border-radius:999px; background:#f3f4f6; color:#374151; font-size:12px; }
@@ -20,6 +20,7 @@
     button { flex:1; padding:10px 12px; border-radius:10px; border:1px solid #e5e7eb; background:white; font-weight:700; }
     button:active { transform: scale(0.99); }
     .error { color: #b91c1c; font-weight:700; }
+    .muted { color:#6b7280; font-size:12px; margin-top: 6px; }
   </style>
 </head>
 <body>
@@ -30,130 +31,131 @@
       <button id="refresh">Refresh</button>
       <button id="toggle">Show Top 10</button>
     </div>
+    <div class="muted" id="hint"></div>
   </header>
 
   <main id="app"></main>
 
   <script>
-    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1YGhr0zUKlvaFxmPV6QPmwVTeDIuAmyTTqCZLe2b6mUrXbyOKC7N1hrZXRcSmkXRa2CUNAF64cBgI/pub?gid=630467273&single=true&output=csv"; // <-- paste published CSV link here
-    function withCacheBust(url) {
-      const sep = url.includes("?") ? "&" : "?";
-      return url + sep + "_=" + Date.now();
-    }
+    // 🔴 Replace this with your published CSV link (PublicLeaderboard -> CSV)
+    const CSV_URL = "PASTE_YOUR_PUBLISHED_CSV_URL_HERE";
 
     let showTop10 = true;
 
     const app = document.getElementById("app");
     const updated = document.getElementById("updated");
+    const hint = document.getElementById("hint");
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+      }[c]));
+    }
+
+    // Build URL safely and bust caches
+    function withCacheBust(url) {
+      const sep = url.includes("?") ? "&" : "?";
+      return url + sep + "_=" + Date.now();
+    }
+
+    // CSV parser that handles commas inside quotes
+    function splitCSVLine(line) {
+      const out = [];
+      let cur = "";
+      let inQuotes = false;
+
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+
+        if (ch === '"') {
+          // Handle escaped double quotes ("")
+          if (inQuotes && line[i + 1] === '"') {
+            cur += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (ch === "," && !inQuotes) {
+          out.push(cur);
+          cur = "";
+        } else {
+          cur += ch;
+        }
+      }
+      out.push(cur);
+      return out;
+    }
 
     function parseCSV(text) {
-  const lines = text.trim().split(/\r?\n/);
+      const raw = text.trim();
+      if (!raw) return [];
 
-  // Remove header row
-  const dataLines = lines.slice(1);
+      const lines = raw.split(/\r?\n/);
+      if (lines.length < 2) return [];
 
-  return dataLines
-    .map(line => line.split(","))
-    .map(cols => {
-      // Handle both formats:
-      // 4 cols: Rank,Medal,Name,Total
-      // 3 cols: Rank,Name,Total
-      if (cols.length >= 4) {
-        const [rank, medal, name, total] = cols;
-        return {
-          rank: (rank || "").trim(),
-          medal: (medal || "").trim(),
-          name: (name || "").trim(),
-          total: Number((total || "0").trim()) || 0
-        };
-      } else {
-        const [rank, name, total] = cols;
-        return {
-          rank: (rank || "").trim(),
-          medal: "",
-          name: (name || "").trim(),
-          total: Number((total || "0").trim()) || 0
-        };
+      // Header
+      const header = splitCSVLine(lines[0]).map(s => s.trim().toLowerCase());
+      const dataLines = lines.slice(1);
+
+      const rows = [];
+
+      for (const line of dataLines) {
+        if (!line.trim()) continue;
+        const cols = splitCSVLine(line).map(s => s.trim());
+
+        // Supports either:
+        // 4 cols: Rank, Medal, Name, Total
+        // 3 cols: Rank, Name, Total
+        let rank = "", medal = "", name = "", total = "0";
+
+        if (cols.length >= 4) {
+          [rank, medal, name, total] = cols;
+        } else if (cols.length === 3) {
+          [rank, name, total] = cols;
+          medal = "";
+        } else {
+          // If something weird comes through, skip it
+          continue;
+        }
+
+        const numTotal = Number(String(total).replace(/[^0-9.\-]/g, "")) || 0;
+
+        rows.push({
+          rank,
+          medal,
+          name,
+          total: numTotal
+        });
       }
-    })
-    .filter(r => r.name);
-}
 
+      return rows.filter(r => r.name);
+    }
 
     function render(rows) {
-  app.innerHTML = "";
+      app.innerHTML = "";
 
-  if (!rows || !rows.length) {
-    app.innerHTML = `<div class="card error">No data found. Make sure your PublicLeaderboard is published as CSV.</div>`;
-    return;
-  }
+      if (!rows || !rows.length) {
+        app.innerHTML = `<div class="card error">No rows parsed. Check that your published CSV contains Name + Total columns.</div>`;
+        return;
+      }
 
-  // Sort by total desc (in case the sheet isn't sorted)
-  const sorted = [...rows].sort((a, b) => (b.total || 0) - (a.total || 0));
-
-  // Decide what to show (Top 10 vs All)
-  const view = showTop10 ? sorted.slice(0, 10) : sorted;
-
-  for (let i = 0; i < view.length; i++) {
-    const r = view[i];
-
-    // If CSV includes medals, use them; otherwise show numeric rank
-    const displayRank = r.medal && r.medal.trim()
-      ? r.medal.trim()
-      : `#${i + 1}`;
-
-    const el = document.createElement("div");
-    el.className = "card";
-    el.innerHTML = `
-      <div class="row">
-        <div class="rank">${displayRank}</div>
-        <div class="name">${escapeHtml(r.name || "")}</div>
-        <div class="pts">${Number(r.total || 0).toFixed(2)}</div>
-      </div>
-      <div class="pill">Total PPR Points</div>
-    `;
-
-    app.appendChild(el);
-  }
-}
-
-
-      // Sort by total desc (in case the sheet isn't sorted)
-      rows.sort((a,b) => b.total - a.total);
-
-      const view = showTop10 ? rows.slice(0, 10) : rows;
+      // Sort by score desc for display
+      const sorted = [...rows].sort((a, b) => (b.total || 0) - (a.total || 0));
+      const view = showTop10 ? sorted.slice(0, 10) : sorted;
 
       for (let i = 0; i < view.length; i++) {
         const r = view[i];
-        // Sort by total desc (in case the sheet isn't sorted)
-rows.sort((a,b) => b.total - a.total);
-
-const view = showTop10 ? rows.slice(0, 10) : rows;
-
-for (let i = 0; i < view.length; i++) {
-  const r = view[i];
-  const displayRank = r.medal ? r.medal : `#${i + 1}`;
-
-  const el = document.createElement("div");
-  el.className = "card";
-  el.innerHTML = `
-    <div class="row">
-      <div class="rank">${displayRank}</div>
-      <div class="name">${escapeHtml(r.name)}</div>
-      <div class="pts">${r.total.toFixed(2)}</div>
-    </div>
-    <div class="pill">Total PPR Points</div>
-  `;
-  app.appendChild(el);
-}
+        const displayRank = (r.medal && r.medal.trim())
+          ? r.medal.trim()
+          : `#${i + 1}`;
 
         const el = document.createElement("div");
         el.className = "card";
         el.innerHTML = `
           <div class="row">
-            <div class="rank">#${rank}</div>
+            <div class="rank">${escapeHtml(displayRank)}</div>
             <div class="name">${escapeHtml(r.name)}</div>
-            <div class="pts">${r.total.toFixed(2)}</div>
+            <div class="pts">${(r.total || 0).toFixed(2)}</div>
           </div>
           <div class="pill">Total PPR Points</div>
         `;
@@ -161,34 +163,50 @@ for (let i = 0; i < view.length; i++) {
       }
     }
 
-    function escapeHtml(s) {
-      return s.replace(/[&<>"']/g, (c) => ({
-        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-      }[c]));
+    async function load() {
+      hint.textContent = "";
+      updated.textContent = "Updating…";
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+      try {
+        if (!CSV_URL || CSV_URL.includes("PASTE_YOUR")) {
+          throw new Error("CSV_URL is not set. Paste your published CSV link into CSV_URL.");
+        }
+
+        const url = withCacheBust(CSV_URL);
+        const res = await fetch(url, { cache: "no-store", signal: controller.signal });
+
+        if (!res.ok) {
+          throw new Error(`Fetch failed: HTTP ${res.status}`);
+        }
+
+        const text = await res.text();
+
+        // Helpful hint: show first line so you can confirm columns
+        const firstLine = (text.split(/\r?\n/)[0] || "").trim();
+        hint.textContent = firstLine ? ("CSV header: " + firstLine) : "";
+
+        const rows = parseCSV(text);
+        if (!rows.length) {
+          throw new Error("Parsed 0 rows. Make sure PublicLeaderboard has data and is published as CSV.");
+        }
+
+        render(rows);
+        updated.textContent = "Updated: " + new Date().toLocaleString();
+      } catch (e) {
+        const msg = (e && e.name === "AbortError")
+          ? "Fetch timed out (10s). Check your CSV publish link."
+          : (e && e.message ? e.message : String(e));
+
+        app.innerHTML = `<div class="card error">${escapeHtml(msg)}</div>`;
+        updated.textContent = "Update failed";
+        console.error(e);
+      } finally {
+        clearTimeout(timeout);
+      }
     }
-
-  async function load() {
-  try {
-    updated.textContent = "Updating…";
-
-    const url = withCacheBust(CSV_URL);
-    const res = await fetch(url, { cache: "no-store" });
-
-    if (!res.ok) throw new Error(`Fetch failed: HTTP ${res.status}`);
-
-    const text = await res.text();
-    const rows = parseCSV(text);
-
-    if (!rows.length) throw new Error("No rows parsed (CSV format mismatch or empty).");
-
-    render(rows);
-    updated.textContent = "Updated: " + new Date().toLocaleString();
-  } catch (e) {
-    app.innerHTML = `<div class="card error">${escapeHtml(String(e.message || e))}</div>`;
-    updated.textContent = "Update failed";
-    console.error(e);
-  }
-}
 
     document.getElementById("refresh").addEventListener("click", load);
     document.getElementById("toggle").addEventListener("click", () => {
@@ -201,7 +219,3 @@ for (let i = 0; i < view.length; i++) {
   </script>
 </body>
 </html>
-
-
-
-
