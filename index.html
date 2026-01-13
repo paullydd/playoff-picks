@@ -1,0 +1,787 @@
+<!doctype html>
+
+<html>
+
+<head>
+
+  <meta charset="utf-8" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>Playoff Fantasy Picks</title>
+
+
+
+  <style>
+
+    body { font-family: Arial, sans-serif; max-width: 760px; margin: 30px auto; padding: 0 16px; }
+
+    h1 { margin: 0 0 6px; }
+
+    .hint { color: #555; margin: 0 0 18px; }
+
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    @media (max-width: 650px) { .grid { grid-template-columns: 1fr; } }
+
+    label { display:block; margin-top: 12px; font-weight: 700; }
+
+    input, select { width: 100%; padding: 10px; margin-top: 6px; font-size: 16px; }
+
+    .card { border: 1px solid #ddd; border-radius: 12px; padding: 14px; }
+
+    button { width: 100%; padding: 12px 14px; margin-top: 18px; font-size: 16px; cursor: pointer; }
+
+    .status { margin-top: 12px; font-weight: 700; }
+
+    .small { font-size: 12px; color: #666; margin-top: 6px; }
+
+  </style>
+
+</head>
+
+
+
+<body>
+
+  <h1>Playoff Fantasy Picks</h1>
+
+  <p class="hint">Pick: 1 QB, 2 RB, 3 WR, 1 TE. No duplicate players within your lineup.</p>
+
+
+
+  <div class="card">
+
+    <label>Your Name</label>
+
+    <input id="name" placeholder="Paul" autocomplete="name" />
+
+
+
+    <div class="grid">
+
+      <div>
+
+        <label>QB</label>
+
+        <input id="qbSearch" placeholder="Search QB..." />
+
+        <select id="qb"></select>
+
+      </div>
+
+      <div>
+
+        <label>TE</label>
+
+        <input id="teSearch" placeholder="Search TE..." />
+
+        <select id="te"></select>
+
+      </div>
+
+    </div>
+
+
+
+    <div class="grid">
+
+      <div>
+
+        <label>RB 1</label>
+
+        <input id="rb1Search" placeholder="Search RB..." />
+
+        <select id="rb1"></select>
+
+      </div>
+
+      <div>
+
+        <label>RB 2</label>
+
+        <input id="rb2Search" placeholder="Search RB..." />
+
+        <select id="rb2"></select>
+
+      </div>
+
+    </div>
+
+
+
+    <div class="grid">
+
+      <div>
+
+        <label>WR 1</label>
+
+        <input id="wr1Search" placeholder="Search WR..." />
+
+        <select id="wr1"></select>
+
+      </div>
+
+      <div>
+
+        <label>WR 2</label>
+
+        <input id="wr2Search" placeholder="Search WR..." />
+
+        <select id="wr2"></select>
+
+      </div>
+
+    </div>
+
+
+
+    <label>WR 3</label>
+
+    <input id="wr3Search" placeholder="Search WR..." />
+
+    <select id="wr3"></select>
+
+
+
+    <button id="submit">Submit Picks</button>
+
+    <div class="status" id="status"></div>
+
+    <div class="small" id="smallNote"></div>
+
+  </div>
+
+
+
+  <script>
+
+    /**
+
+     * 1) Put your full player list here (or just the playoff pool).
+
+     * Format: "Player Name — TEAM — POS"
+
+     * Example: "Josh Allen — BUF — QB"
+
+     */
+
+    const PLAYER_POOL = [
+
+      // ---- QB ----
+
+      "Josh Allen — BUF — QB",
+
+      "C.J. Stroud — HOU — QB",
+
+      "Aaron Rodgers — PIT — QB",
+
+      "Jalen Hurts — PHI — QB",
+
+      "Drake Maye — NE — QB",
+
+      "Trevor Lawrence — JAX — QB",
+
+      "Matthew Stafford — LAR — QB",
+
+      "Bryce Young — CAR — QB",
+
+      "Jordan Love — GB — QB",
+
+      "Caleb Williams — CHI — QB",
+
+      "Brock Purdy — SF — QB",
+
+      "Justin Herbert — LAC — QB",
+
+      "Bo Nix — DEN — QB",
+
+      "Sam Darnold — SEA — QB",
+
+      // ---- RB ----
+
+      "Christian McCaffrey — SF — RB",
+
+      "James Cook III — BUF — RB",
+
+      "Saquon Barkley — PHI — RB",
+
+      "Kyren Williams — LAR — RB",
+
+      "Josh Jacobs — GB — RB",
+
+      "Travis Etienne Jr — JAX — RB",
+
+      "Jaylen Warren — PIT — RB",
+
+      "D'Andre Swift — CHI — RB",
+
+      "Rhamondre Stevenson — NE — RB",
+
+      "Omarion Hampton — LAC — RB",
+
+      "RJ Harvey — DEN — RB",
+
+      "Rico Dowdle — CAR — RB",
+
+      "TreVeyon Henderson — NE — RB",
+
+      "Kenneth Gainwell — PIT — RB",
+
+      "Zach Charbonnet — SEA — RB",
+
+      "Kenneth Walker III — SEA - RB",
+
+      "Woody Marks — HOU — RB",
+
+      "Blake Corum — LAR — RB",
+
+      "Kyle Monangai — CHI — RB",
+
+      // ---- WR ----
+
+      "Puka Nacua — LAR — WR",
+
+      "Jaxon Smith-Njigba — SEA — WR",
+
+      "Davante Adams — LAR — WR",
+
+      "Nico Collins — HOU — WR",
+
+      "A.J. Brown — PHI — WR",
+
+      "Courtland Sutton — DEV — WR",
+
+      "Jauan Jennings — SF — WR",
+
+      "Stefon Diggs — NE — WR",
+
+      "Tetairoa McMillan — CAR — WR",
+
+      "Rome Odunze — CHI — WR",
+
+      "Ladd McConkey — LAC — WR",
+
+      "Jakobi Meyers — JAX — WR",
+
+      "Khalil Shakir — BUF — WR",
+
+      "DK Metcalf — PIT — WR",
+
+      "Christian Watson — GB — WR",
+
+      "Quentin Johnston — LAC — WR",
+
+      "DeVonta Smith — PHI — WR",
+
+      "Ricky Pearsall — SF — WR",
+
+      "Luther Burden III — CHI — WR",
+
+      "DJ Moore — CHI — WR",
+
+      "Troy Franklin — DEN — WR",
+
+      "Parker Washington — JAX — WR",
+
+      "Brian Thomas Jr. — JAX — WR",
+
+      "Keenan Allen — LAC — WR",
+
+      "Kayshon Boutte — NE — WR",
+
+      "Brandin Cooks — BUF — WR",
+
+      "Romeo Doubs — GB — WR",
+
+      "Jayden Reed — GB — WR",
+
+      "Rashid Shaheed — SEA — WR",
+
+      "Jayden Higgins — HOU — WR",
+
+      "Cooper Kupp — SEA — WR",
+
+      "Jalen Cooker — CAR — WR",
+
+      "Xavier Legette — CAR — WR",
+
+      "Calvin Austin III — PIT — WR",
+
+      // ---- TE ----
+
+      "George Kittle — SF — TE",
+
+      "Dallas Goedert — PHI — TE",
+
+      "Dalton Schultz — HOU — TE",
+
+      "Hunter Henry — NE — TE",
+
+      "Colston Loveland — CHI — TE",
+
+      "Brenton Strange — JAX — TE",
+
+      "Oronde Gadsden II — LAC — TE",
+
+      "Dalton Kincaid — BUF — TE",
+
+      "A.J. Barner — SEA — TE",
+
+      "Evan Engram — DEN — TE",
+
+      "Jonnu Smith — PIT — TE",
+
+      "Pat Freiermuth — PIT — TE",
+
+      "Tyler Higbee — LAR — TE",
+
+      "Colby Parkinson — LAR — TE",
+
+      "Terrance Feruson — LAR — TE",
+
+      "Luke Musgrave — GB  TE",
+
+      "Dawson Knox — BUF — TE",
+
+      "Ja'Tavion Sanders — CAR — TE",
+
+      "Tommy Tremble — CAR — TE",
+
+      "Cole Kmet — CHI — TE",
+
+    ];
+
+
+
+    // OPTIONAL: paste your Google Apps Script Web App URL here later
+
+    const SUBMIT_URL = "https://script.google.com/macros/s/AKfycbz8Z5PlLLVYCmk_VYzEiniBPHF7tBcNnMHNqV7LwxxroDkfnsI5Nb3bYjucv44GHGuMCw/exec";
+
+
+
+    const slots = [
+
+      { pos: "QB", selectId: "qb", searchId: "qbSearch" },
+
+      { pos: "RB", selectId: "rb1", searchId: "rb1Search" },
+
+      { pos: "RB", selectId: "rb2", searchId: "rb2Search" },
+
+      { pos: "WR", selectId: "wr1", searchId: "wr1Search" },
+
+      { pos: "WR", selectId: "wr2", searchId: "wr2Search" },
+
+      { pos: "WR", selectId: "wr3", searchId: "wr3Search" },
+
+      { pos: "TE", selectId: "te", searchId: "teSearch" },
+
+    ];
+
+
+
+    const $ = (id) => document.getElementById(id);
+
+
+
+    // Parse "Name — TEAM — POS"
+
+    function parsePlayer(s) {
+
+  // Accept em dash —, en dash –, or hyphen -
+
+      const parts = s.split(/—|–|-/).map(x => x.trim());
+
+      const name = parts[0] || s.trim();
+
+      const team = (parts[1] || "").toUpperCase();
+
+      const pos  = (parts[2] || "").toUpperCase();
+
+
+
+  return { raw: s, name, team, pos };
+
+}
+
+
+
+
+
+    const allPlayers = PLAYER_POOL.map(parsePlayer);
+
+
+
+    // Build a list per position
+
+    const playersByPos = allPlayers.reduce((acc, p) => {
+
+      acc[p.pos] = acc[p.pos] || [];
+
+      acc[p.pos].push(p);
+
+      return acc;
+
+    }, {});
+
+
+
+    function optionLabel(p) {
+
+      // What users see in dropdown:
+
+      return `${p.name} (${p.team})`;
+
+    }
+
+
+
+    // Create options for a select with filtering + placeholder
+
+    function renderSelectOptions(selectEl, pos, filterText, selectedRaw, disabledSet) {
+
+      const list = (playersByPos[pos] || []).slice();
+
+
+
+      const f = (filterText || "").trim().toLowerCase();
+
+      const filtered = f
+
+        ? list.filter(p => optionLabel(p).toLowerCase().includes(f))
+
+        : list;
+
+
+
+      // Sort by name for nicer UX
+
+      filtered.sort((a,b) => a.name.localeCompare(b.name));
+
+
+
+      // Preserve current selection even if filtered out
+
+      const selectedObj = selectedRaw ? allPlayers.find(p => p.raw === selectedRaw) : null;
+
+
+
+      selectEl.innerHTML = "";
+
+
+
+      // Placeholder
+
+      const ph = document.createElement("option");
+
+      ph.value = "";
+
+      ph.textContent = `Select a ${pos}...`;
+
+      selectEl.appendChild(ph);
+
+
+
+      // If selection exists but isn't in the filtered list, show it on top
+
+      if (selectedObj && selectedObj.pos === pos && !filtered.some(p => p.raw === selectedObj.raw)) {
+
+        const opt = document.createElement("option");
+
+        opt.value = selectedObj.raw;
+
+        opt.textContent = optionLabel(selectedObj) + " (selected)";
+
+        opt.selected = true;
+
+        opt.disabled = false;
+
+        selectEl.appendChild(opt);
+
+      }
+
+
+
+      for (const p of filtered) {
+
+        const opt = document.createElement("option");
+
+        opt.value = p.raw;
+
+        opt.textContent = optionLabel(p);
+
+
+
+        // Disable if already chosen in another slot (no duplicates within lineup)
+
+        if (disabledSet.has(p.raw) && p.raw !== selectedRaw) {
+
+          opt.disabled = true;
+
+        }
+
+
+
+        if (p.raw === selectedRaw) opt.selected = true;
+
+        selectEl.appendChild(opt);
+
+      }
+
+    }
+
+
+
+    function getSelections() {
+
+      const picks = {};
+
+      for (const s of slots) {
+
+        picks[s.selectId] = $(s.selectId).value;
+
+      }
+
+      return picks;
+
+    }
+
+
+
+    function computeDisabledSet() {
+
+      const picks = getSelections();
+
+      const chosen = Object.values(picks).filter(Boolean);
+
+      return new Set(chosen);
+
+    }
+
+
+
+    function rerenderAll() {
+
+      const disabledSet = computeDisabledSet();
+
+      for (const s of slots) {
+
+        const selectEl = $(s.selectId);
+
+        const searchEl = $(s.searchId);
+
+        renderSelectOptions(selectEl, s.pos, searchEl.value, selectEl.value, disabledSet);
+
+      }
+
+    }
+
+
+
+    // Initialize selects + listeners
+
+    function init() {
+
+      for (const s of slots) {
+
+        const selectEl = $(s.selectId);
+
+        const searchEl = $(s.searchId);
+
+
+
+        searchEl.addEventListener("input", rerenderAll);
+
+        selectEl.addEventListener("change", rerenderAll);
+
+      }
+
+      rerenderAll();
+
+
+
+      $("submit").addEventListener("click", onSubmit);
+
+      $("smallNote").textContent = SUBMIT_URL
+
+        ? "Submissions will be saved."
+
+        : "Demo mode: submissions show a preview only (add SUBMIT_URL to save to a Sheet).";
+
+    }
+
+
+
+    function validateLineup(name, picks) {
+
+      if (!name.trim()) return "Please enter your name.";
+
+
+
+      // ensure all slots chosen
+
+      for (const s of slots) {
+
+        if (!picks[s.selectId]) return `Missing: ${s.pos} (${s.selectId.toUpperCase()}).`;
+
+      }
+
+
+
+      // ensure no duplicate raw values
+
+      const chosen = Object.values(picks).filter(Boolean);
+
+      const unique = new Set(chosen);
+
+      if (unique.size !== chosen.length) return "Duplicate player selected. Each lineup must be unique.";
+
+      return null;
+
+    }
+
+
+
+    function toSubmission(name, picks) {
+
+      const lookup = (raw) => allPlayers.find(p => p.raw === raw) || { name: raw, team: "", pos: "" };
+
+
+
+      // map slots to tidy fields
+
+      const qb = lookup(picks.qb);
+
+      const rb1 = lookup(picks.rb1);
+
+      const rb2 = lookup(picks.rb2);
+
+      const wr1 = lookup(picks.wr1);
+
+      const wr2 = lookup(picks.wr2);
+
+      const wr3 = lookup(picks.wr3);
+
+      const te = lookup(picks.te);
+
+
+
+      return {
+
+        name: name.trim(),
+
+        qb: qb.name, qbTeam: qb.team,
+
+        rb1: rb1.name, rb1Team: rb1.team,
+
+        rb2: rb2.name, rb2Team: rb2.team,
+
+        wr1: wr1.name, wr1Team: wr1.team,
+
+        wr2: wr2.name, wr2Team: wr2.team,
+
+        wr3: wr3.name, wr3Team: wr3.team,
+
+        te: te.name, teTeam: te.team,
+
+        submittedAt: new Date().toISOString()
+
+      };
+
+    }
+
+
+
+    async function onSubmit() {
+
+      const name = $("name").value;
+
+      const picks = getSelections();
+
+
+
+      const err = validateLineup(name, picks);
+
+      if (err) {
+
+        $("status").textContent = err;
+
+        $("status").style.color = "crimson";
+
+        return;
+
+      }
+
+
+
+      const payload = toSubmission(name, picks);
+
+
+
+      if (!SUBMIT_URL) {
+
+        $("status").textContent = "Submitted (demo). Open console to see payload.";
+
+        $("status").style.color = "green";
+
+        console.log("Submission payload:", payload);
+
+        alert("Demo submission saved to console. Add SUBMIT_URL to write to Google Sheets.");
+
+        return;
+
+      }
+
+
+
+      try {
+
+        $("status").textContent = "Submitting...";
+
+        $("status").style.color = "#333";
+
+
+
+        const res = await fetch(SUBMIT_URL, {
+
+          method: "POST",
+
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+
+          body: JSON.stringify(payload)
+
+        });
+
+        $("status").textContent = "Submitted! ✅ (Saved to sheet)";
+        $("status").style.color = "green";
+
+        const text = await res.text();
+
+        if (!res.ok) throw new Error(text || `HTTP ${res.status}`);
+
+
+
+        $("status").textContent = "Submitted! ✅";
+
+        $("status").style.color = "green";
+
+      } catch (e) {
+
+        $("status").textContent = "Submit failed: " + (e?.message || e);
+
+        $("status").style.color = "crimson";
+
+      }
+
+    }
+
+
+
+    init();
+
+  </script>
+
+</body>
+
+</html>
+
