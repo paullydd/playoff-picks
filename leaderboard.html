@@ -135,7 +135,7 @@ for (let i = 0; i < view.length; i++) {
     async function load() {
       try {
         updated.textContent = "Updating…";
-        const res = await fetch(CSV_URL, { cache: "no-store" });
+        const res = await fetch(CSV_URL + "&_=" + Date.now(), { cache: "no-store" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const text = await res.text();
         const rows = parseCSV(text);
@@ -159,4 +159,5 @@ for (let i = 0; i < view.length; i++) {
   </script>
 </body>
 </html>
+
 
