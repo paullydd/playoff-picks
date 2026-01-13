@@ -42,17 +42,38 @@
     const updated = document.getElementById("updated");
 
     function parseCSV(text) {
-      // Simple CSV parser (works fine for Rank/Name/Total with no commas in names)
-      const lines = text.trim().split(/\r?\n/);
-      const rows = lines.slice(1).map(line => line.split(","));
-      return rows
-        .map(([rank, name, total]) => ({
+  const lines = text.trim().split(/\r?\n/);
+
+  // Remove header row
+  const dataLines = lines.slice(1);
+
+  return dataLines
+    .map(line => line.split(","))
+    .map(cols => {
+      // Handle both formats:
+      // 4 cols: Rank,Medal,Name,Total
+      // 3 cols: Rank,Name,Total
+      if (cols.length >= 4) {
+        const [rank, medal, name, total] = cols;
+        return {
           rank: (rank || "").trim(),
+          medal: (medal || "").trim(),
           name: (name || "").trim(),
           total: Number((total || "0").trim()) || 0
-        }))
-        .filter(r => r.name);
-    }
+        };
+      } else {
+        const [rank, name, total] = cols;
+        return {
+          rank: (rank || "").trim(),
+          medal: "",
+          name: (name || "").trim(),
+          total: Number((total || "0").trim()) || 0
+        };
+      }
+    })
+    .filter(r => r.name);
+}
+
 
     function render(rows) {
       app.innerHTML = "";
@@ -69,7 +90,28 @@
 
       for (let i = 0; i < view.length; i++) {
         const r = view[i];
-        const rank = i + 1; // re-rank visually based on score order
+        // Sort by total desc (in case the sheet isn't sorted)
+rows.sort((a,b) => b.total - a.total);
+
+const view = showTop10 ? rows.slice(0, 10) : rows;
+
+for (let i = 0; i < view.length; i++) {
+  const r = view[i];
+  const displayRank = r.medal ? r.medal : `#${i + 1}`;
+
+  const el = document.createElement("div");
+  el.className = "card";
+  el.innerHTML = `
+    <div class="row">
+      <div class="rank">${displayRank}</div>
+      <div class="name">${escapeHtml(r.name)}</div>
+      <div class="pts">${r.total.toFixed(2)}</div>
+    </div>
+    <div class="pill">Total PPR Points</div>
+  `;
+  app.appendChild(el);
+}
+
         const el = document.createElement("div");
         el.className = "card";
         el.innerHTML = `
@@ -117,3 +159,4 @@
   </script>
 </body>
 </html>
+
