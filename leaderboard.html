@@ -1,0 +1,119 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Playoff Leaderboard</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; margin: 0; background: #f6f7fb; }
+    header { position: sticky; top: 0; background: white; padding: 14px 16px; border-bottom: 1px solid #e5e7eb; }
+    h1 { font-size: 18px; margin: 0; }
+    .sub { color:#6b7280; font-size: 12px; margin-top: 4px; }
+    main { padding: 14px 12px 28px; max-width: 720px; margin: 0 auto; }
+    .card { background: white; border: 1px solid #e5e7eb; border-radius: 14px; padding: 12px 14px; margin: 10px 0; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+    .row { display:flex; align-items:baseline; justify-content:space-between; gap: 12px; }
+    .rank { font-weight: 800; font-size: 22px; width: 44px; }
+    .name { font-weight: 700; font-size: 16px; flex: 1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .pts { font-weight: 900; font-size: 18px; }
+    .pill { display:inline-block; margin-top:8px; padding:4px 10px; border-radius:999px; background:#f3f4f6; color:#374151; font-size:12px; }
+    .controls { display:flex; gap:10px; margin-top:10px; }
+    button { flex:1; padding:10px 12px; border-radius:10px; border:1px solid #e5e7eb; background:white; font-weight:700; }
+    button:active { transform: scale(0.99); }
+    .error { color: #b91c1c; font-weight:700; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Playoff Leaderboard</h1>
+    <div class="sub" id="updated">Updating…</div>
+    <div class="controls">
+      <button id="refresh">Refresh</button>
+      <button id="toggle">Show Top 10</button>
+    </div>
+  </header>
+
+  <main id="app"></main>
+
+  <script>
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1YGhr0zUKlvaFxmPV6QPmwVTeDIuAmyTTqCZLe2b6mUrXbyOKC7N1hrZXRcSmkXRa2CUNAF64cBgI/pub?gid=630467273&single=true&output=csv"; // <-- paste published CSV link here
+    let showTop10 = true;
+
+    const app = document.getElementById("app");
+    const updated = document.getElementById("updated");
+
+    function parseCSV(text) {
+      // Simple CSV parser (works fine for Rank/Name/Total with no commas in names)
+      const lines = text.trim().split(/\r?\n/);
+      const rows = lines.slice(1).map(line => line.split(","));
+      return rows
+        .map(([rank, name, total]) => ({
+          rank: (rank || "").trim(),
+          name: (name || "").trim(),
+          total: Number((total || "0").trim()) || 0
+        }))
+        .filter(r => r.name);
+    }
+
+    function render(rows) {
+      app.innerHTML = "";
+
+      if (!rows.length) {
+        app.innerHTML = `<div class="card error">No data found. Make sure your PublicLeaderboard is published as CSV.</div>`;
+        return;
+      }
+
+      // Sort by total desc (in case the sheet isn't sorted)
+      rows.sort((a,b) => b.total - a.total);
+
+      const view = showTop10 ? rows.slice(0, 10) : rows;
+
+      for (let i = 0; i < view.length; i++) {
+        const r = view[i];
+        const rank = i + 1; // re-rank visually based on score order
+        const el = document.createElement("div");
+        el.className = "card";
+        el.innerHTML = `
+          <div class="row">
+            <div class="rank">#${rank}</div>
+            <div class="name">${escapeHtml(r.name)}</div>
+            <div class="pts">${r.total.toFixed(2)}</div>
+          </div>
+          <div class="pill">Total PPR Points</div>
+        `;
+        app.appendChild(el);
+      }
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/[&<>"']/g, (c) => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+      }[c]));
+    }
+
+    async function load() {
+      try {
+        updated.textContent = "Updating…";
+        const res = await fetch(CSV_URL, { cache: "no-store" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const text = await res.text();
+        const rows = parseCSV(text);
+        render(rows);
+        updated.textContent = "Updated: " + new Date().toLocaleString();
+      } catch (e) {
+        app.innerHTML = `<div class="card error">Couldn’t load leaderboard. Check your published CSV link.</div>`;
+        updated.textContent = "Update failed";
+        console.error(e);
+      }
+    }
+
+    document.getElementById("refresh").addEventListener("click", load);
+    document.getElementById("toggle").addEventListener("click", () => {
+      showTop10 = !showTop10;
+      document.getElementById("toggle").textContent = showTop10 ? "Show All" : "Show Top 10";
+      load();
+    });
+
+    load();
+  </script>
+</body>
+</html>
