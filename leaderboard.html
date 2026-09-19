@@ -5,25 +5,99 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Playoff Leaderboard</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; margin: 0; background: #f6f7fb; }
-    header { position: sticky; top: 0; background: white; padding: 14px 16px; border-bottom: 1px solid #e5e7eb; z-index: 10; }
-    h1 { font-size: 18px; margin: 0; }
-    .sub { color:#6b7280; font-size: 12px; margin-top: 4px; }
-    main { padding: 14px 12px 28px; max-width: 720px; margin: 0 auto; }
-    .card { background: white; border: 1px solid #e5e7eb; border-radius: 14px; padding: 12px 14px; margin: 10px 0; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
-    .row { display:flex; align-items:baseline; justify-content:space-between; gap: 12px; }
-    .rank { font-weight: 800; font-size: 22px; width: 52px; }
-    .name { font-weight: 700; font-size: 16px; flex: 1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .pts { font-weight: 900; font-size: 18px; }
-    .pill { display:inline-block; margin-top:8px; padding:4px 10px; border-radius:999px; background:#f3f4f6; color:#374151; font-size:12px; }
-    .controls { display:flex; gap:10px; margin-top:10px; }
-    button { flex:1; padding:10px 12px; border-radius:10px; border:1px solid #e5e7eb; background:white; font-weight:700; }
-    button:active { transform: scale(0.99); }
-    .error { color: #b91c1c; font-weight:700; }
-    .muted { color:#6b7280; font-size:12px; margin-top: 6px; }
+    :root {
+      --qb: #2563eb;
+      --rb: #16a34a;
+      --wr: #ea580c;
+      --te: #7c3aed;
+      --ink: #1a1a1a;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --bg-page: #f6f7fb;
+      --gold: #f59e0b;
+      --silver: #9ca3af;
+      --bronze: #b45309;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      margin: 0; background: var(--bg-page); color: var(--ink);
+    }
+    a { color: inherit; }
+    nav {
+      display: flex; gap: 14px; padding: 10px 16px; background: var(--ink);
+    }
+    nav a {
+      color: #fff; text-decoration: none; font-size: 13px; font-weight: 700;
+      opacity: 0.7; padding: 4px 0;
+    }
+    nav a.active { opacity: 1; border-bottom: 2px solid #fff; }
+
+    header {
+      position: sticky; top: 0; background: #fff; padding: 16px;
+      border-bottom: 1px solid var(--border); z-index: 10;
+    }
+    h1 { font-size: 20px; margin: 0; }
+    .sub { color: var(--muted); font-size: 12px; margin-top: 4px; }
+    main { padding: 14px 12px 40px; max-width: 720px; margin: 0 auto; }
+
+    .controls { display: flex; gap: 10px; margin-top: 12px; }
+    button {
+      flex: 1; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
+      background: #fff; font-weight: 700; font-size: 13px; cursor: pointer;
+    }
+    button:active { transform: scale(0.98); }
+    .muted { color: var(--muted); font-size: 12px; margin-top: 6px; }
+    .error { color: #b91c1c; font-weight: 700; }
+
+    .card {
+      background: #fff; border: 1px solid var(--border); border-radius: 14px;
+      margin: 10px 0; box-shadow: 0 1px 2px rgba(0,0,0,.04); overflow: hidden;
+    }
+    .row {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 14px; cursor: pointer;
+    }
+    .row:active { background: #fafafa; }
+    .rank { font-weight: 800; font-size: 20px; width: 44px; flex-shrink: 0; }
+    .name { font-weight: 700; font-size: 16px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .pts { font-weight: 900; font-size: 18px; flex-shrink: 0; }
+    .chevron { color: var(--muted); font-size: 12px; margin-left: 6px; transition: transform .15s ease; flex-shrink: 0; }
+    .card.open .chevron { transform: rotate(90deg); }
+
+    .roster {
+      display: none; border-top: 1px solid var(--border); padding: 6px 14px 12px;
+    }
+    .card.open .roster { display: block; }
+    .rplayer {
+      display: flex; align-items: center; gap: 10px; padding: 7px 0;
+      border-bottom: 1px dashed var(--border);
+    }
+    .rplayer:last-child { border-bottom: none; }
+    .pos-tag {
+      font-weight: 800; font-size: 10px; color: #fff; border-radius: 6px;
+      padding: 3px 6px; width: 30px; text-align: center; flex-shrink: 0;
+    }
+    .pos-tag.QB { background: var(--qb); }
+    .pos-tag.RB1, .pos-tag.RB2 { background: var(--rb); }
+    .pos-tag.WR1, .pos-tag.WR2, .pos-tag.WR3 { background: var(--wr); }
+    .pos-tag.TE { background: var(--te); }
+    .rplayer .pname { flex: 1; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rplayer .pteam { font-size: 12px; color: var(--muted); width: 36px; flex-shrink: 0; }
+    .rplayer .ppts { font-weight: 700; font-size: 14px; width: 48px; text-align: right; flex-shrink: 0; }
+    .roster-empty { padding: 10px 0; font-size: 13px; color: var(--muted); }
+
+    .medal-1 .rank { color: var(--gold); }
+    .medal-2 .rank { color: var(--silver); }
+    .medal-3 .rank { color: var(--bronze); }
   </style>
 </head>
 <body>
+  <nav>
+    <a href="index.html">Submit Picks</a>
+    <a href="leaderboard.html" class="active">Leaderboard</a>
+  </nav>
+
   <header>
     <h1>Playoff Leaderboard</h1>
     <div class="sub" id="updated">Updating…</div>
@@ -37,10 +111,14 @@
   <main id="app"></main>
 
   <script>
-    // 🔴 Replace this with your published CSV link (PublicLeaderboard -> CSV)
+    // Published CSV link (PublicLeaderboard -> CSV)
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1YGhr0zUKlvaFxmPV6QPmwVTeDIuAmyTTqCZLe2b6mUrXbyOKC7N1hrZXRcSmkXRa2CUNAF64cBgI/pub?gid=630467273&single=true&output=csv";
 
+    const ROSTER_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1YGhr0zUKlvaFxmPV6QPmwVTeDIuAmyTTqCZLe2b6mUrXbyOKC7N1hrZXRcSmkXRa2CUNAF64cBgI/pub?gid=2086137848&single=true&output=csv";
+
     let showTop10 = true;
+    let rosterByName = {};
+    const openNames = new Set();
 
     const app = document.getElementById("app");
     const updated = document.getElementById("updated");
@@ -52,7 +130,6 @@
       }[c]));
     }
 
-    // Build URL safely and bust caches
     function withCacheBust(url) {
       const sep = url.includes("?") ? "&" : "?";
       return url + sep + "_=" + Date.now();
@@ -68,7 +145,6 @@
         const ch = line[i];
 
         if (ch === '"') {
-          // Handle escaped double quotes ("")
           if (inQuotes && line[i + 1] === '"') {
             cur += '"';
             i++;
@@ -86,26 +162,19 @@
       return out;
     }
 
-    function parseCSV(text) {
+    function parseCSVRows(text) {
       const raw = text.trim();
       if (!raw) return [];
-
       const lines = raw.split(/\r?\n/);
       if (lines.length < 2) return [];
+      return lines.slice(1).filter(l => l.trim()).map(l => splitCSVLine(l).map(s => s.trim()));
+    }
 
-      // Header
-      const header = splitCSVLine(lines[0]).map(s => s.trim().toLowerCase());
-      const dataLines = lines.slice(1);
+    function parseLeaderboard(text) {
+      const rows = parseCSVRows(text);
+      const out = [];
 
-      const rows = [];
-
-      for (const line of dataLines) {
-        if (!line.trim()) continue;
-        const cols = splitCSVLine(line).map(s => s.trim());
-
-        // Supports either:
-        // 4 cols: Rank, Medal, Name, Total
-        // 3 cols: Rank, Name, Total
+      for (const cols of rows) {
         let rank = "", medal = "", name = "", total = "0";
 
         if (cols.length >= 4) {
@@ -114,52 +183,97 @@
           [rank, name, total] = cols;
           medal = "";
         } else {
-          // If something weird comes through, skip it
           continue;
         }
 
         const numTotal = Number(String(total).replace(/[^0-9.\-]/g, "")) || 0;
-
-        rows.push({
-          rank,
-          medal,
-          name,
-          total: numTotal
-        });
+        out.push({ rank, medal, name, total: numTotal });
       }
 
-      return rows.filter(r => r.name);
+      return out.filter(r => r.name);
+    }
+
+    function parseRoster(text) {
+      const rows = parseCSVRows(text);
+      const map = {};
+
+      for (const cols of rows) {
+        if (cols.length < 5) continue;
+        const [name, position, player, team, points] = cols;
+        if (!name) continue;
+        const numPoints = Number(String(points).replace(/[^0-9.\-]/g, "")) || 0;
+        (map[name] = map[name] || []).push({ position, player, team, points: numPoints });
+      }
+
+      // Fixed slot order for display
+      const order = ["QB", "RB1", "RB2", "WR1", "WR2", "WR3", "TE"];
+      for (const name in map) {
+        map[name].sort((a, b) => order.indexOf(a.position) - order.indexOf(b.position));
+      }
+
+      return map;
+    }
+
+    function renderRoster(name) {
+      const players = rosterByName[name];
+      if (!players || !players.length) {
+        return `<div class="roster-empty">No roster data yet.</div>`;
+      }
+      return players.map(p => `
+        <div class="rplayer">
+          <div class="pos-tag ${escapeHtml(p.position)}">${escapeHtml(p.position)}</div>
+          <div class="pname">${escapeHtml(p.player)}</div>
+          <div class="pteam">${escapeHtml(p.team)}</div>
+          <div class="ppts">${p.points.toFixed(1)}</div>
+        </div>
+      `).join("");
     }
 
     function render(rows) {
       app.innerHTML = "";
 
       if (!rows || !rows.length) {
-        app.innerHTML = `<div class="card error">No rows parsed. Check that your published CSV contains Name + Total columns.</div>`;
+        app.innerHTML = `<div class="card"><div class="row"><div class="error">No rows parsed. Check that your published CSV contains Name + Total columns.</div></div></div>`;
         return;
       }
 
-      // Sort by score desc for display
       const sorted = [...rows].sort((a, b) => (b.total || 0) - (a.total || 0));
       const view = showTop10 ? sorted.slice(0, 10) : sorted;
 
       for (let i = 0; i < view.length; i++) {
         const r = view[i];
-        const displayRank = (r.medal && r.medal.trim())
-          ? r.medal.trim()
-          : `#${i + 1}`;
+        const displayRank = (r.medal && r.medal.trim()) ? r.medal.trim() : `#${i + 1}`;
+        const isOpen = openNames.has(r.name);
 
         const el = document.createElement("div");
-        el.className = "card";
+        el.className = "card" + (isOpen ? " open" : "") + (i === 0 ? " medal-1" : i === 1 ? " medal-2" : i === 2 ? " medal-3" : "");
         el.innerHTML = `
-          <div class="row">
+          <div class="row" data-name="${escapeHtml(r.name)}">
             <div class="rank">${escapeHtml(displayRank)}</div>
             <div class="name">${escapeHtml(r.name)}</div>
             <div class="pts">${(r.total || 0).toFixed(2)}</div>
+            <div class="chevron">&#9656;</div>
           </div>
-          <div class="pill">Total PPR Points</div>
+          <div class="roster">${renderRoster(r.name)}</div>
         `;
+        el.querySelector(".row").addEventListener("click", () => {
+          if (openNames.has(r.name)) openNames.delete(r.name);
+          else openNames.add(r.name);
+          el.classList.toggle("open");
+        });
         app.appendChild(el);
+      }
+    }
+
+    async function fetchCSV(url, timeoutMs) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const res = await fetch(withCacheBust(url), { cache: "no-store", signal: controller.signal });
+        if (!res.ok) throw new Error(`Fetch failed: HTTP ${res.status}`);
+        return await res.text();
+      } finally {
+        clearTimeout(timeout);
       }
     }
 
@@ -167,28 +281,28 @@
       hint.textContent = "";
       updated.textContent = "Updating…";
 
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
-
       try {
         if (!CSV_URL || CSV_URL.includes("PASTE_YOUR")) {
           throw new Error("CSV_URL is not set. Paste your published CSV link into CSV_URL.");
         }
 
-        const url = withCacheBust(CSV_URL);
-        const res = await fetch(url, { cache: "no-store", signal: controller.signal });
-
-        if (!res.ok) {
-          throw new Error(`Fetch failed: HTTP ${res.status}`);
+        // Roster data is optional — if not set up yet, the leaderboard still works,
+        // it just won't have anything to show when a name is expanded.
+        if (ROSTER_CSV_URL && !ROSTER_CSV_URL.includes("PASTE_YOUR")) {
+          try {
+            const rosterText = await fetchCSV(ROSTER_CSV_URL, 10000);
+            rosterByName = parseRoster(rosterText);
+          } catch (e) {
+            console.error("Roster fetch failed:", e);
+          }
         }
 
-        const text = await res.text();
+        const text = await fetchCSV(CSV_URL, 10000);
 
-        // Helpful hint: show first line so you can confirm columns
         const firstLine = (text.split(/\r?\n/)[0] || "").trim();
         hint.textContent = firstLine ? ("CSV header: " + firstLine) : "";
 
-        const rows = parseCSV(text);
+        const rows = parseLeaderboard(text);
         if (!rows.length) {
           throw new Error("Parsed 0 rows. Make sure PublicLeaderboard has data and is published as CSV.");
         }
@@ -200,11 +314,9 @@
           ? "Fetch timed out (10s). Check your CSV publish link."
           : (e && e.message ? e.message : String(e));
 
-        app.innerHTML = `<div class="card error">${escapeHtml(msg)}</div>`;
+        app.innerHTML = `<div class="card"><div class="row"><div class="error">${escapeHtml(msg)}</div></div></div>`;
         updated.textContent = "Update failed";
         console.error(e);
-      } finally {
-        clearTimeout(timeout);
       }
     }
 
@@ -219,4 +331,3 @@
   </script>
 </body>
 </html>
-

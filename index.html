@@ -26,6 +26,16 @@
     h1 { margin: 0 0 4px; font-size: 26px; }
     .hint { color: var(--muted); margin: 0 0 18px; }
 
+    nav {
+      display: flex; gap: 14px; padding: 10px 16px; background: var(--ink);
+      margin: -24px -16px 20px;
+    }
+    nav a {
+      color: #fff; text-decoration: none; font-size: 13px; font-weight: 700;
+      opacity: 0.7; padding: 4px 0;
+    }
+    nav a.active { opacity: 1; border-bottom: 2px solid #fff; }
+
     .progress-bar {
       position: sticky; top: 0; z-index: 5;
       background: var(--bg-page); padding: 10px 0 14px;
@@ -116,6 +126,10 @@
 </head>
 
 <body>
+  <nav>
+    <a href="index.html" class="active">Submit Picks</a>
+    <a href="leaderboard.html">Leaderboard</a>
+  </nav>
   <h1>Playoff Fantasy Picks</h1>
   <p class="hint">Pick: 1 QB, 2 RB, 3 WR, 1 TE. No duplicate players within your lineup.</p>
 
