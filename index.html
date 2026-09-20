@@ -4,6 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Playoff Fantasy Picks</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 
   <style>
     :root {
@@ -11,62 +14,90 @@
       --rb: #16a34a;
       --wr: #ea580c;
       --te: #7c3aed;
-      --ink: #1a1a1a;
-      --muted: #666;
-      --border: #ddd;
+      --ink: #16241d;
+      --muted: #5b6b62;
+      --border: #dde3dc;
       --bg-card: #fff;
-      --bg-page: #f6f7f9;
+      --bg-page: #f3f5f1;
+      --field: #0b3d2e;
+      --field-dark: #062920;
+      --gold: #f2b705;
+      --gold-dark: #c99a04;
+      --chalk: #f7faf7;
     }
     * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-      max-width: 760px; margin: 0 auto; padding: 24px 16px 60px;
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      max-width: 760px; margin: 0 auto; padding: 0 0 60px;
       background: var(--bg-page); color: var(--ink);
     }
-    h1 { margin: 0 0 4px; font-size: 26px; }
-    .hint { color: var(--muted); margin: 0 0 18px; }
+    .display { font-family: "Anton", "Inter", sans-serif; letter-spacing: 0.03em; text-transform: uppercase; }
 
     nav {
-      display: flex; gap: 14px; padding: 10px 16px; background: var(--ink);
-      margin: -24px -16px 20px;
+      display: flex; align-items: center; gap: 14px; padding: 12px 16px;
+      background: var(--field-dark); border-bottom: 3px solid var(--gold);
     }
     nav a {
       color: #fff; text-decoration: none; font-size: 13px; font-weight: 700;
-      opacity: 0.7; padding: 4px 0;
+      opacity: 0.6; padding: 4px 0; letter-spacing: 0.03em;
     }
-    nav a.active { opacity: 1; border-bottom: 2px solid #fff; }
+    nav a.active { opacity: 1; color: var(--gold); border-bottom: 2px solid var(--gold); }
+
+    .hero {
+      position: relative; overflow: hidden; padding: 26px 16px 22px;
+      background: repeating-linear-gradient(180deg, var(--field) 0 40px, #0e4634 40px 44px), var(--field);
+      color: var(--chalk);
+    }
+    .hero::after {
+      content: ""; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% -20%, rgba(242,183,5,0.18), transparent 60%);
+      pointer-events: none;
+    }
+    .hero-inner { position: relative; }
+    h1 {
+      margin: 0 0 6px; font-size: 32px; line-height: 1.05; color: #fff;
+      text-shadow: 0 2px 0 rgba(0,0,0,0.25);
+    }
+    h1 .ball { display: inline-block; margin-right: 6px; }
+    .hint { color: #cfe3d9; margin: 0; font-size: 13px; }
+
+    main { padding: 0 16px; }
 
     .progress-bar {
       position: sticky; top: 0; z-index: 5;
-      background: var(--bg-page); padding: 10px 0 14px;
+      background: var(--bg-page); padding: 14px 0 14px; margin-top: 8px;
     }
     .progress-track {
-      background: #e5e7eb; border-radius: 999px; height: 8px; overflow: hidden;
+      background: #e3e8e2; border-radius: 999px; height: 10px; overflow: hidden;
+      border: 1px solid #d3dad1;
     }
     .progress-fill {
-      height: 100%; background: linear-gradient(90deg, var(--qb), var(--te));
+      height: 100%; background: linear-gradient(90deg, var(--gold-dark), var(--gold));
       width: 0%; transition: width .25s ease;
     }
     .progress-chips {
-      display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap;
+      display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap;
     }
     .chip {
-      font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px;
-      background: #e5e7eb; color: var(--muted); transition: all .15s ease;
+      font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 999px;
+      background: #e3e8e2; color: var(--muted); transition: all .15s ease;
+      letter-spacing: 0.02em;
     }
     .chip.filled { color: #fff; }
     .chip.filled.QB { background: var(--qb); }
     .chip.filled.RB { background: var(--rb); }
     .chip.filled.WR { background: var(--wr); }
     .chip.filled.TE { background: var(--te); }
-    .progress-count { font-size: 13px; color: var(--muted); margin-top: 6px; }
+    .progress-count { font-size: 13px; color: var(--muted); margin-top: 6px; font-weight: 600; }
 
     .card {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
-      padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;
+      padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      border-top: 4px solid var(--gold);
     }
-    label { display:block; margin-top: 14px; font-weight: 700; font-size: 14px; }
-    label .pos-tag { font-weight: 700; font-size: 11px; padding: 2px 6px; border-radius: 6px; color:#fff; margin-left: 6px; vertical-align: middle; }
+    label { display:block; margin-top: 16px; font-weight: 700; font-size: 13px; letter-spacing: 0.02em; }
+    label .pos-tag { font-weight: 800; font-size: 10px; padding: 3px 7px; border-radius: 6px; color:#fff; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em; }
     .pos-tag.QB { background: var(--qb); }
     .pos-tag.RB { background: var(--rb); }
     .pos-tag.WR { background: var(--wr); }
@@ -75,14 +106,15 @@
     input {
       width: 100%; padding: 10px; margin-top: 6px; font-size: 16px;
       border: 1px solid var(--border); border-radius: 8px; background: #fff;
+      font-family: inherit;
     }
-    input:focus { outline: 2px solid #93c5fd; outline-offset: -1px; }
+    input:focus { outline: 2px solid var(--gold); outline-offset: -1px; }
 
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     @media (max-width: 650px) { .grid { grid-template-columns: 1fr; } }
 
     .combo { position: relative; }
-    .combo.filled .combo-input { border-color: var(--muted); font-weight: 600; }
+    .combo.filled .combo-input { border-color: var(--field); font-weight: 700; background: #f4fbf7; }
     .combo-input { padding-right: 34px; cursor: pointer; }
     .combo-clear {
       position: absolute; right: 6px; top: 50%; transform: translateY(6px);
@@ -100,28 +132,45 @@
     .combo-option {
       padding: 9px 12px; font-size: 15px; cursor: pointer;
     }
-    .combo-option:hover, .combo-option.active { background: #eff4ff; }
+    .combo-option:hover, .combo-option.active { background: #eaf6ef; }
     .combo-option.disabled { color: #bbb; cursor: not-allowed; background: none; text-decoration: line-through; }
     .combo-empty { padding: 10px 12px; font-size: 14px; color: var(--muted); }
 
     button#submit {
-      width: 100%; padding: 13px 14px; margin-top: 22px; font-size: 16px; font-weight: 700;
-      cursor: pointer; border: none; border-radius: 10px; background: var(--ink); color: #fff;
+      width: 100%; padding: 15px 14px; margin-top: 24px; font-size: 15px; font-weight: 800;
+      cursor: pointer; border: none; border-radius: 12px;
+      background: linear-gradient(180deg, var(--gold), var(--gold-dark)); color: var(--field-dark);
+      letter-spacing: 0.04em; text-transform: uppercase;
+      box-shadow: 0 3px 0 #9a7900, 0 4px 10px rgba(0,0,0,0.15);
+      transition: transform .08s ease, box-shadow .08s ease;
     }
-    button#submit:disabled { opacity: 0.6; cursor: default; }
+    button#submit:active { transform: translateY(2px); box-shadow: 0 1px 0 #9a7900, 0 2px 6px rgba(0,0,0,0.15); }
+    button#submit:disabled { opacity: 0.6; cursor: default; transform: none; }
 
     .status { margin-top: 12px; font-weight: 700; min-height: 20px; }
     .small { font-size: 12px; color: var(--muted); margin-top: 8px; }
 
     .success-panel {
-      display: none; margin-top: 16px; border: 1px solid #bbf7d0; background: #f0fdf4;
-      border-radius: 12px; padding: 16px;
+      display: none; margin-top: 16px; border: 1px solid #bfe3cd; background: #eefaf1;
+      border-radius: 14px; padding: 18px; position: relative; overflow: hidden;
     }
-    .success-panel.show { display: block; }
-    .success-panel h3 { margin: 0 0 10px; color: #166534; }
-    .recap { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 14px; }
+    .success-panel.show { display: block; animation: touchdown .4s ease; }
+    .success-panel h3 {
+      margin: 0 0 12px; color: var(--field); font-size: 22px; display: flex; align-items: center; gap: 8px;
+    }
+    .success-panel h3 .ball { animation: spin 1s ease-in-out; display: inline-block; }
+    .recap { display: grid; grid-template-columns: auto 1fr; gap: 5px 14px; font-size: 14px; }
     .recap dt { font-weight: 700; color: var(--muted); }
-    .recap dd { margin: 0; }
+    .recap dd { margin: 0; font-weight: 600; }
+
+    @keyframes touchdown {
+      0% { transform: translateY(-8px) scale(0.97); opacity: 0; }
+      100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 
@@ -130,9 +179,15 @@
     <a href="index.html" class="active">Submit Picks</a>
     <a href="leaderboard.html">Leaderboard</a>
   </nav>
-  <h1>Playoff Fantasy Picks</h1>
-  <p class="hint">Pick: 1 QB, 2 RB, 3 WR, 1 TE. No duplicate players within your lineup.</p>
 
+  <div class="hero">
+    <div class="hero-inner">
+      <h1 class="display"><span class="ball">🏈</span>Playoff Fantasy Picks</h1>
+      <p class="hint">Pick: 1 QB, 2 RB, 3 WR, 1 TE. No duplicate players within your lineup.</p>
+    </div>
+  </div>
+
+  <main>
   <div class="progress-bar">
     <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
     <div class="progress-chips" id="progressChips"></div>
@@ -179,15 +234,16 @@
     <label>WR 3 <span class="pos-tag WR">WR</span></label>
     <div class="combo" data-slot="wr3"></div>
 
-    <button id="submit">Submit Picks</button>
+    <button id="submit">🏈 Lock In My Lineup</button>
     <div class="status" id="status"></div>
     <div class="small" id="smallNote"></div>
 
     <div class="success-panel" id="successPanel">
-      <h3>Picks submitted</h3>
+      <h3><span class="ball">🏈</span> Touchdown! Picks locked in.</h3>
       <dl class="recap" id="recap"></dl>
     </div>
   </div>
+  </main>
 
   <script>
     /**
