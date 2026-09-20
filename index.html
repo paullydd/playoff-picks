@@ -150,6 +150,13 @@
     .status { margin-top: 12px; font-weight: 700; min-height: 20px; }
     .small { font-size: 12px; color: var(--muted); margin-top: 8px; }
 
+    .round-banner {
+      display: none; margin-top: 10px; padding: 5px 12px; border-radius: 999px;
+      background: rgba(242,183,5,0.16); border: 1px solid var(--gold); color: #fff;
+      font-weight: 800; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase;
+    }
+    .round-banner.show { display: inline-block; }
+
     .success-panel {
       display: none; margin-top: 16px; border: 1px solid #bfe3cd; background: #eefaf1;
       border-radius: 14px; padding: 18px; position: relative; overflow: hidden;
@@ -184,6 +191,7 @@
     <div class="hero-inner">
       <h1 class="display"><span class="ball">🏈</span>Playoff Fantasy Picks</h1>
       <p class="hint">Pick: 1 QB, 2 RB, 3 WR, 1 TE. No duplicate players within your lineup.</p>
+      <span class="round-banner" id="roundBanner"></span>
     </div>
   </div>
 
@@ -347,6 +355,9 @@
 
     // OPTIONAL: paste your Google Apps Script Web App URL here later
     const SUBMIT_URL = "https://script.google.com/macros/s/AKfycbz8Z5PlLLVYCmk_VYzEiniBPHF7tBcNnMHNqV7LwxxroDkfnsI5Nb3bYjucv44GHGuMCw/exec";
+
+    // Published CSV link (PublicLeaderboard -> CSV) — used only to show the current round banner
+    const ROUND_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1YGhr0zUKlvaFxmPV6QPmwVTeDIuAmyTTqCZLe2b6mUrXbyOKC7N1hrZXRcSmkXRa2CUNAF64cBgI/pub?gid=630467273&single=true&output=csv";
 
     const DRAFT_KEY = "playoffPicksDraft_v1";
 
@@ -680,8 +691,56 @@
       }
     }
 
+    // ---------- Current round banner (best-effort, never blocks the picker) ----------
+    function splitCSVLine(line) {
+      const out = [];
+      let cur = "";
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') {
+          if (inQuotes && line[i + 1] === '"') { cur += '"'; i++; }
+          else inQuotes = !inQuotes;
+        } else if (ch === "," && !inQuotes) {
+          out.push(cur); cur = "";
+        } else {
+          cur += ch;
+        }
+      }
+      out.push(cur);
+      return out;
+    }
+
+    async function loadRoundBanner() {
+      if (!ROUND_CSV_URL || ROUND_CSV_URL.includes("PASTE_YOUR")) return;
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        const res = await fetch(ROUND_CSV_URL + "?_=" + Date.now(), { cache: "no-store", signal: controller.signal });
+        clearTimeout(timeout);
+        if (!res.ok) return;
+        const text = (await res.text()).trim();
+        const lines = text.split(/\r?\n/);
+        if (!lines.length) return;
+        const header = splitCSVLine(lines[0]).map(s => s.trim().toLowerCase());
+        const idx = header.indexOf("round");
+        if (idx === -1) return;
+        for (const line of lines.slice(1)) {
+          if (!line.trim()) continue;
+          const cols = splitCSVLine(line).map(s => s.trim());
+          if (cols[idx]) {
+            const el = $("roundBanner");
+            el.textContent = "🏈 Current Round: " + cols[idx];
+            el.classList.add("show");
+            break;
+          }
+        }
+      } catch (e) { /* non-critical, ignore */ }
+    }
+
     function init() {
       for (const s of slots) buildCombo(s);
+      loadRoundBanner();
 
       document.addEventListener("click", (e) => {
         for (const id in combos) {

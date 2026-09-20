@@ -110,6 +110,13 @@
     .medal-2 .rank { background: var(--silver); color: #1a1a1a; }
     .medal-3 .rank { background: var(--bronze); color: #fff; }
     .medal-1 .pts { color: var(--gold-dark); }
+
+    .round-banner {
+      display: none; margin-top: 12px; padding: 6px 14px; border-radius: 999px;
+      background: rgba(242,183,5,0.16); border: 1px solid var(--gold); color: #fff;
+      font-weight: 800; font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase;
+    }
+    .round-banner.show { display: inline-block; }
   </style>
 </head>
 <body>
@@ -121,6 +128,7 @@
   <header>
     <h1 class="display">🏆 Playoff Leaderboard</h1>
     <div class="sub" id="updated">Updating…</div>
+    <div><span class="round-banner" id="roundBanner"></span></div>
     <div class="controls">
       <button id="refresh">Refresh</button>
       <button id="toggle">Show Top 10</button>
@@ -188,6 +196,22 @@
       const lines = raw.split(/\r?\n/);
       if (lines.length < 2) return [];
       return lines.slice(1).filter(l => l.trim()).map(l => splitCSVLine(l).map(s => s.trim()));
+    }
+
+    function parseRoundLabel(text) {
+      const raw = text.trim();
+      if (!raw) return "";
+      const lines = raw.split(/\r?\n/);
+      if (!lines.length) return "";
+      const header = splitCSVLine(lines[0]).map(s => s.trim().toLowerCase());
+      const idx = header.indexOf("round");
+      if (idx === -1) return "";
+      for (const line of lines.slice(1)) {
+        if (!line.trim()) continue;
+        const cols = splitCSVLine(line).map(s => s.trim());
+        if (cols[idx]) return cols[idx];
+      }
+      return "";
     }
 
     function parseLeaderboard(text) {
@@ -321,6 +345,15 @@
 
         const firstLine = (text.split(/\r?\n/)[0] || "").trim();
         hint.textContent = firstLine ? ("CSV header: " + firstLine) : "";
+
+        const roundLabel = parseRoundLabel(text);
+        const roundEl = document.getElementById("roundBanner");
+        if (roundLabel) {
+          roundEl.textContent = "🏈 Current Round: " + roundLabel;
+          roundEl.classList.add("show");
+        } else {
+          roundEl.classList.remove("show");
+        }
 
         const rows = parseLeaderboard(text);
         if (!rows.length) {
