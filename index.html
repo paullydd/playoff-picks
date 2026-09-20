@@ -157,6 +157,14 @@
     }
     .round-banner.show { display: inline-block; }
 
+    .repick-banner {
+      display: none; margin-top: 8px; padding: 8px 14px; border-radius: 12px;
+      background: rgba(220,38,38,0.14); border: 1px solid #dc2626; color: #fff;
+      font-weight: 700; font-size: 12px; line-height: 1.4;
+    }
+    .repick-banner.show { display: block; }
+    .repick-banner b { color: #fca5a5; }
+
     .success-panel {
       display: none; margin-top: 16px; border: 1px solid #bfe3cd; background: #eefaf1;
       border-radius: 14px; padding: 18px; position: relative; overflow: hidden;
@@ -192,6 +200,7 @@
       <h1 class="display"><span class="ball">🏈</span>Playoff Fantasy Picks</h1>
       <p class="hint">Pick: 1 QB, 2 RB, 3 WR, 1 TE. No duplicate players within your lineup.</p>
       <span class="round-banner" id="roundBanner"></span>
+      <div class="repick-banner" id="repickBanner"></div>
     </div>
   </div>
 
@@ -724,16 +733,34 @@
         const lines = text.split(/\r?\n/);
         if (!lines.length) return;
         const header = splitCSVLine(lines[0]).map(s => s.trim().toLowerCase());
-        const idx = header.indexOf("round");
-        if (idx === -1) return;
-        for (const line of lines.slice(1)) {
-          if (!line.trim()) continue;
-          const cols = splitCSVLine(line).map(s => s.trim());
-          if (cols[idx]) {
-            const el = $("roundBanner");
-            el.textContent = "🏈 Current Round: " + cols[idx];
+
+        const roundIdx = header.indexOf("round");
+        if (roundIdx !== -1) {
+          for (const line of lines.slice(1)) {
+            if (!line.trim()) continue;
+            const cols = splitCSVLine(line).map(s => s.trim());
+            if (cols[roundIdx]) {
+              const el = $("roundBanner");
+              el.textContent = "🏈 Current Round: " + cols[roundIdx];
+              el.classList.add("show");
+              break;
+            }
+          }
+        }
+
+        const nameIdx = header.indexOf("name");
+        const repickIdx = header.indexOf("needsrepick");
+        if (nameIdx !== -1 && repickIdx !== -1) {
+          const names = [];
+          for (const line of lines.slice(1)) {
+            if (!line.trim()) continue;
+            const cols = splitCSVLine(line).map(s => s.trim());
+            if ((cols[repickIdx] || "").toLowerCase() === "yes" && cols[nameIdx]) names.push(cols[nameIdx]);
+          }
+          if (names.length) {
+            const el = $("repickBanner");
+            el.innerHTML = "🚩 <b>Needs a repick:</b> " + names.map(n => n.replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))).join(", ");
             el.classList.add("show");
-            break;
           }
         }
       } catch (e) { /* non-critical, ignore */ }

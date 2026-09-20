@@ -117,6 +117,14 @@
       font-weight: 800; font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase;
     }
     .round-banner.show { display: inline-block; }
+
+    .repick-banner {
+      display: none; margin-top: 8px; padding: 8px 14px; border-radius: 12px;
+      background: rgba(220,38,38,0.12); border: 1px solid #dc2626; color: #fff;
+      font-weight: 700; font-size: 12px; line-height: 1.4;
+    }
+    .repick-banner.show { display: block; }
+    .repick-banner b { color: #fca5a5; }
   </style>
 </head>
 <body>
@@ -129,6 +137,7 @@
     <h1 class="display">🏆 Playoff Leaderboard</h1>
     <div class="sub" id="updated">Updating…</div>
     <div><span class="round-banner" id="roundBanner"></span></div>
+    <div class="repick-banner" id="repickBanner"></div>
     <div class="controls">
       <button id="refresh">Refresh</button>
       <button id="toggle">Show Top 10</button>
@@ -212,6 +221,26 @@
         if (cols[idx]) return cols[idx];
       }
       return "";
+    }
+
+    function parseNeedsRepickNames(text) {
+      const raw = text.trim();
+      if (!raw) return [];
+      const lines = raw.split(/\r?\n/);
+      if (!lines.length) return [];
+      const header = splitCSVLine(lines[0]).map(s => s.trim().toLowerCase());
+      const nameIdx = header.indexOf("name");
+      const repickIdx = header.indexOf("needsrepick");
+      if (nameIdx === -1 || repickIdx === -1) return [];
+      const names = [];
+      for (const line of lines.slice(1)) {
+        if (!line.trim()) continue;
+        const cols = splitCSVLine(line).map(s => s.trim());
+        if ((cols[repickIdx] || "").toLowerCase() === "yes" && cols[nameIdx]) {
+          names.push(cols[nameIdx]);
+        }
+      }
+      return names;
     }
 
     function parseLeaderboard(text) {
@@ -353,6 +382,15 @@
           roundEl.classList.add("show");
         } else {
           roundEl.classList.remove("show");
+        }
+
+        const repickNames = parseNeedsRepickNames(text);
+        const repickEl = document.getElementById("repickBanner");
+        if (repickNames.length) {
+          repickEl.innerHTML = "🚩 <b>Needs a repick:</b> " + repickNames.map(escapeHtml).join(", ");
+          repickEl.classList.add("show");
+        } else {
+          repickEl.classList.remove("show");
         }
 
         const rows = parseLeaderboard(text);
